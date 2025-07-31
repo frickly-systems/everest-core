@@ -1,17 +1,18 @@
-.. _everest_modules_handwritten_YetiDriver:
+.. _everest_modules_handwritten_TIDA010939Driver:
 
 ************************
-YetiDriver
+TIDA010939Driver
 ************************
 
-See also module's :ref:`auto-generated reference <everest_modules_YetiDriver>`.
-The module ``YetiDriver`` is a board support driver for Pionix Yeti Power
-Board.
+See also module's :ref:`auto-generated reference <everest_modules_TIDA010939Driver>`.
+The module ``TIDA010939Driver`` is a board support driver for Texas Instruments
+TIDA-010939 reference design. It is based on the Yeti driver with similar structure
+and functionality.
 
-Communication between the Yeti microcontroller and this driver module
-=====================================================================
+Communication between the TIDA010939 microcontroller and this driver module
+============================================================================
 
-The hardware connection between Yeti and Yak (the board running EVerest and
+The hardware connection between TIDA010939 and the host system (the board running EVerest and
 this module) is 3.3V TTL UART plus 2 GPIOs (one to reset the microcontroller
 from Linux and one to wakeup Linux from the microcontroller, which is 
 currrently unused).
@@ -21,7 +22,7 @@ The default configuration is 115200 bps 8N1.
 Protocol
 ========
 
-EVerest can send commands to Yeti and Yeti publishes data and events back
+EVerest can send commands to TIDA010939 and TIDA010939 publishes data and events back
 to EVerest. The packets are defined with protobuf to serialize the C structs
 into a binary representation that is transferred over the serial wire in a 
 stream:
@@ -36,7 +37,7 @@ https://en.wikipedia.org/wiki/Consistent_Overhead_Byte_Stuffing
 COBS
 ----
 
-COBS is implemented in ``yeti_comms/evSerial.cpp``. Whenever a new packet
+COBS is implemented in ``tida_010939_comms/evSerial.cpp``. Whenever a new packet
 was extracted from the stream ``handlePacket()`` is called to decode protobuf
 and generate the corresponding signals. 
 Other parts of the module subscribe to these signals to handle the incoming 
@@ -47,10 +48,10 @@ For TX ``linkWrite`` encodes the packet with COBS and outputs it to the UART.
 Protobuf
 --------
 
-The actual packet definitions are located under ``yeti_comms/protobuf``.
+The actual packet definitions are located under ``tida_010939_comms/protobuf``.
 
-``yeti.proto`` contains all messages that can be sent from EVerest to Yeti and
-all messages that Yeti sends to EVerest.
+``tida_010939.proto`` contains all messages that can be sent from EVerest to TIDA010939 and
+all messages that TIDA010939 sends to EVerest.
 
 Refer to these files for an up to date definition as they may change 
 frequently.
@@ -59,15 +60,15 @@ To generate the C code nanopb is used:
 
 ``nanopb_generator -I . -D . *.proto``
 
-The output should also be manually copied to Yeti Firmware to ensure the same
+The output should also be manually copied to TIDA010939 Firmware to ensure the same
 definition is used on both sides when making changes.
 
-EVerest to Yeti
----------------
+EVerest to TIDA010939
+--------------------
 
-The most important commands that EVerest sends to Yeti are the following:
+The most important commands that EVerest sends to TIDA010939 are the following:
 
-``SetControlMode(mode)``: Yeti firmware can operate in different modes:
+``SetControlMode(mode)``: TIDA010939 firmware can operate in different modes:
 
 ``Mode NONE = 0``: In this mode Yeti does not allow control over UART. It will
 still send telemetry data. Yeti operates as a standalone non-smart AC charger
@@ -105,19 +106,14 @@ car is in CP state B etc). On power off Yeti must switch off immediately.
 Other commands for all modes:
 _____________________________
 
-``FirmwareUpdate(bool)``: Send true to reboot Yeti into ROM boot loader. 
-After that stm32flash tool can be used to flash any firmware binary to it.
-Note that this is a dev kit and for a real product this needs to be implemented
-differently.
-
-``KeepAliveHi``: Send this packet to Yeti at 1Hz. If no heartbeat is received
-for a longer amount of time Yeti may fall back to control mode NONE to act
+``KeepAliveHi``: Send this packet to TIDA010939 at 1Hz. If no heartbeat is received
+for a longer amount of time TIDA010939 may fall back to control mode NONE to act
 as a stand alone emergency backup charger or go into failure mode (can be 
 modified in the firmware).
 
 ``SetThreePhases``: true: switches to 3ph on next switch on, else single phase.
 Only works on hardware configurations with dual relais. Does not switch while
-charging session is running, Yeti firmware will delay the change to the next
+charging session is running, TIDA010939 firmware will delay the change to the next
 charging session.
 
 ``EnableRCD``: enable or disable the onboard RCD. Some cars generate quite high
@@ -158,17 +154,14 @@ on CP transitions:
 * ``ERROR_RELAIS``: Relais error (mirror contact check failed)
 * ``ERROR_RCD``:: RCD over current event
 * ``ERROR_VENTILATION_NOT_AVAILABLE``: Car requested D but no ventilation available
-* ``ERROR_OVER_CURRENT``: Yeti detected quick over current on AC lines
+* ``ERROR_OVER_CURRENT``: TIDA010939 detected quick over current on AC lines
 * ``ENTER_BCD``: any other state -> B/C/D. Used to start SLAC
 * ``LEAVE_BCD``: B/C/D -> any other state. Stops SLAC.
 * ``PERMANENT_FAULT``: Permanent fault that cannot be cleared by unplugging car
 * ``EVSE_REPLUG_STARTED``: Replugging sequence started
 * ``EVSE_REPLUG_FINISHED``: Replugging sequence completed
 
-``PowerMeter``: Contains all data from the power measurement, sent at roughly
-1Hz
+``KeepAliveLo``: TIDA010939 sends this at 1Hz to keep up connection.
 
-``KeepAliveLo``: Yeti sends this at 1Hz to keep up connection.
-
-``ResetDone``: Sent once on boot of yeti firmware.
+``ResetDone``: Sent once on boot of TIDA010939 firmware.
 
