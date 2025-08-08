@@ -137,6 +137,12 @@ void evSerial::handlePacket(uint8_t* buf, int len) {
     //  uint32_t crc = calculateCrc(rx_packet_buf, rx_packet_len);
     if (crc32(buf, len)) {
         printf("CRC mismatch\n");
+        //hexdump the data
+        for (int i = 0; i < len; i++) {
+            printf("%02X ", buf[i]);
+        }
+        printf("\n");
+
         return;
     }
 
@@ -145,8 +151,17 @@ void evSerial::handlePacket(uint8_t* buf, int len) {
     McuToEverest msg_in;
     pb_istream_t istream = pb_istream_from_buffer(buf, len);
 
-    if (pb_decode(&istream, McuToEverest_fields, &msg_in))
+    if (pb_decode(&istream, McuToEverest_fields, &msg_in)) {
+
+        printf("Decoded message with type %d\n", msg_in.which_payload);
+
         switch (msg_in.which_payload) {
+
+        case McuToEverest_telemetry_tag:
+            printf("Received telemetry\n");
+            printf("cp_voltage_hi: %u\n", msg_in.payload.telemetry.cp_voltage_hi);
+            printf("cp_voltage_lo: %u\n", msg_in.payload.telemetry.cp_voltage_lo);
+            break;
 
         case McuToEverest_keep_alive_tag:
             // printf("Received keep_alive_lo\n");
@@ -176,6 +191,9 @@ void evSerial::handlePacket(uint8_t* buf, int len) {
                 signalSpuriousReset();
             break;
         }
+    } else {
+        printf("Error decoding message: %s\n", PB_GET_ERROR(&istream));
+    }
 }
 
 void evSerial::cobsDecode(uint8_t* buf, int len) {
@@ -211,6 +229,7 @@ void evSerial::cobsDecodeByte(uint8_t byte) {
                 printf("cobsDecode: Received nothing\n");
             } else {
                 // set back decode with one, as it gets post-incremented
+
                 handlePacket(msg, decode - 1 - msg);
             }
             cobsDecodeReset();
@@ -349,14 +368,16 @@ bool evSerial::reset(const std::string& reset_chip, const int reset_line) {
 
     if (not reset_chip.empty()) {
         // Try to hardware reset TIDA-010939 controller to be in a known state
+        printf("Resetting TIDA-010939 controller via GPIO %s:%d\n", reset_chip.c_str(), reset_line);
+
         Everest::Gpio reset_gpio;
         reset_gpio.open(reset_chip, reset_line);
         reset_gpio.set_output(true);
-        reset_gpio.set(true);
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         reset_gpio.set(false);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         reset_gpio.set(true);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        reset_gpio.set(false);
     } else {
         // Try to soft reset TIDA-010939 controller to be in a known state
         EverestToMcu msg_out = EverestToMcu_init_default;

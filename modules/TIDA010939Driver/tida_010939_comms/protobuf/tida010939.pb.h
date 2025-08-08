@@ -71,25 +71,11 @@ typedef struct _KeepAlive {
     char sw_version_string[51];
 } KeepAlive;
 
-/* *
- This container message is send from EVerest to MCU and may contain any allowed message in that direction. */
-typedef struct _EverestToMcu {
-    pb_size_t which_payload;
-    union {
-        KeepAlive keep_alive;
-        /* false: unlock, true: lock */
-        bool connector_lock;
-        /* in 0.01 %, 0 = State F, 10000 = X1 */
-        uint32_t pwm_duty_cycle;
-        bool allow_power_on;
-        bool reset;
-        bool set_number_of_phases;
-    } payload;
-} EverestToMcu;
-
 typedef struct _Telemetry {
-    uint32_t cp_voltage_hi;
-    uint32_t cp_voltage_lo;
+    float cp_voltage_hi;
+    float cp_voltage_lo;
+    float temp0;
+    float temp1;
 } Telemetry;
 
 /* *
@@ -108,6 +94,29 @@ typedef struct _McuToEverest {
         LockState lock_state;
     } payload;
 } McuToEverest;
+
+typedef struct _FirmwareUpdate {
+    bool invoke_rom_bootloader;
+} FirmwareUpdate;
+
+/* *
+ This container message is send from EVerest to MCU and may contain any allowed message in that direction. */
+typedef struct _EverestToMcu {
+    pb_size_t which_payload;
+    union {
+        /* Needs to remain the same to allow firmware updates of older versions */
+        FirmwareUpdate firmware_update;
+        KeepAlive keep_alive;
+        /* false: unlock, true: lock */
+        bool connector_lock;
+        /* in 0.01 %, 0 = State F, 10000 = X1 */
+        uint32_t pwm_duty_cycle;
+        bool allow_power_on;
+        bool reset;
+        /* false: 1 phase, true: 3 phases */
+        bool set_number_of_phases;
+    } payload;
+} EverestToMcu;
 
 
 #ifdef __cplusplus
@@ -142,19 +151,22 @@ extern "C" {
 
 
 
+
 /* Initializer values for message structs */
-#define EverestToMcu_init_default                {0, {KeepAlive_init_default}}
+#define EverestToMcu_init_default                {0, {FirmwareUpdate_init_default}}
 #define McuToEverest_init_default                {0, {KeepAliveLo_init_default}}
 #define ErrorFlags_init_default                  {0, 0, 0, 0, 0, 0, 0}
 #define KeepAliveLo_init_default                 {0, 0, 0, 0, 0, "", 0, 0, 0, 0, 0}
 #define KeepAlive_init_default                   {0, 0, 0, ""}
-#define Telemetry_init_default                   {0, 0}
-#define EverestToMcu_init_zero                   {0, {KeepAlive_init_zero}}
+#define Telemetry_init_default                   {0, 0, 0, 0}
+#define FirmwareUpdate_init_default              {0}
+#define EverestToMcu_init_zero                   {0, {FirmwareUpdate_init_zero}}
 #define McuToEverest_init_zero                   {0, {KeepAliveLo_init_zero}}
 #define ErrorFlags_init_zero                     {0, 0, 0, 0, 0, 0, 0}
 #define KeepAliveLo_init_zero                    {0, 0, 0, 0, 0, "", 0, 0, 0, 0, 0}
 #define KeepAlive_init_zero                      {0, 0, 0, ""}
-#define Telemetry_init_zero                      {0, 0}
+#define Telemetry_init_zero                      {0, 0, 0, 0}
+#define FirmwareUpdate_init_zero                 {0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define ErrorFlags_diode_fault_tag               1
@@ -179,44 +191,50 @@ extern "C" {
 #define KeepAlive_hw_type_tag                    2
 #define KeepAlive_hw_revision_tag                3
 #define KeepAlive_sw_version_string_tag          6
-#define EverestToMcu_keep_alive_tag              100
-#define EverestToMcu_connector_lock_tag          102
-#define EverestToMcu_pwm_duty_cycle_tag          103
-#define EverestToMcu_allow_power_on_tag          104
-#define EverestToMcu_reset_tag                   105
-#define EverestToMcu_set_number_of_phases_tag    106
 #define Telemetry_cp_voltage_hi_tag              1
 #define Telemetry_cp_voltage_lo_tag              2
-#define McuToEverest_keep_alive_tag              3
-#define McuToEverest_reset_tag                   101
-#define McuToEverest_cp_state_tag                102
-#define McuToEverest_relais_state_tag            103
-#define McuToEverest_error_flags_tag             104
-#define McuToEverest_telemetry_tag               105
-#define McuToEverest_pp_state_tag                106
-#define McuToEverest_lock_state_tag              107
+#define Telemetry_temp0_tag                      3
+#define Telemetry_temp1_tag                      4
+#define McuToEverest_keep_alive_tag              1
+#define McuToEverest_reset_tag                   2
+#define McuToEverest_cp_state_tag                3
+#define McuToEverest_relais_state_tag            4
+#define McuToEverest_error_flags_tag             5
+#define McuToEverest_telemetry_tag               6
+#define McuToEverest_pp_state_tag                7
+#define McuToEverest_lock_state_tag              8
+#define FirmwareUpdate_invoke_rom_bootloader_tag 1
+#define EverestToMcu_firmware_update_tag         1
+#define EverestToMcu_keep_alive_tag              2
+#define EverestToMcu_connector_lock_tag          3
+#define EverestToMcu_pwm_duty_cycle_tag          4
+#define EverestToMcu_allow_power_on_tag          5
+#define EverestToMcu_reset_tag                   6
+#define EverestToMcu_set_number_of_phases_tag    7
 
 /* Struct field encoding specification for nanopb */
 #define EverestToMcu_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,keep_alive,payload.keep_alive), 100) \
-X(a, STATIC,   ONEOF,    BOOL,     (payload,connector_lock,payload.connector_lock), 102) \
-X(a, STATIC,   ONEOF,    UINT32,   (payload,pwm_duty_cycle,payload.pwm_duty_cycle), 103) \
-X(a, STATIC,   ONEOF,    BOOL,     (payload,allow_power_on,payload.allow_power_on), 104) \
-X(a, STATIC,   ONEOF,    BOOL,     (payload,reset,payload.reset), 105) \
-X(a, STATIC,   ONEOF,    BOOL,     (payload,set_number_of_phases,payload.set_number_of_phases), 106)
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,firmware_update,payload.firmware_update),   1) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,keep_alive,payload.keep_alive),   2) \
+X(a, STATIC,   ONEOF,    BOOL,     (payload,connector_lock,payload.connector_lock),   3) \
+X(a, STATIC,   ONEOF,    UINT32,   (payload,pwm_duty_cycle,payload.pwm_duty_cycle),   4) \
+X(a, STATIC,   ONEOF,    BOOL,     (payload,allow_power_on,payload.allow_power_on),   5) \
+X(a, STATIC,   ONEOF,    BOOL,     (payload,reset,payload.reset),   6) \
+X(a, STATIC,   ONEOF,    BOOL,     (payload,set_number_of_phases,payload.set_number_of_phases),   7)
 #define EverestToMcu_CALLBACK NULL
 #define EverestToMcu_DEFAULT NULL
+#define EverestToMcu_payload_firmware_update_MSGTYPE FirmwareUpdate
 #define EverestToMcu_payload_keep_alive_MSGTYPE KeepAlive
 
 #define McuToEverest_FIELDLIST(X, a) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,keep_alive,payload.keep_alive),   3) \
-X(a, STATIC,   ONEOF,    UENUM,    (payload,reset,payload.reset), 101) \
-X(a, STATIC,   ONEOF,    UENUM,    (payload,cp_state,payload.cp_state), 102) \
-X(a, STATIC,   ONEOF,    BOOL,     (payload,relais_state,payload.relais_state), 103) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,error_flags,payload.error_flags), 104) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,telemetry,payload.telemetry), 105) \
-X(a, STATIC,   ONEOF,    UENUM,    (payload,pp_state,payload.pp_state), 106) \
-X(a, STATIC,   ONEOF,    UENUM,    (payload,lock_state,payload.lock_state), 107)
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,keep_alive,payload.keep_alive),   1) \
+X(a, STATIC,   ONEOF,    UENUM,    (payload,reset,payload.reset),   2) \
+X(a, STATIC,   ONEOF,    UENUM,    (payload,cp_state,payload.cp_state),   3) \
+X(a, STATIC,   ONEOF,    BOOL,     (payload,relais_state,payload.relais_state),   4) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,error_flags,payload.error_flags),   5) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,telemetry,payload.telemetry),   6) \
+X(a, STATIC,   ONEOF,    UENUM,    (payload,pp_state,payload.pp_state),   7) \
+X(a, STATIC,   ONEOF,    UENUM,    (payload,lock_state,payload.lock_state),   8)
 #define McuToEverest_CALLBACK NULL
 #define McuToEverest_DEFAULT NULL
 #define McuToEverest_payload_keep_alive_MSGTYPE KeepAliveLo
@@ -258,10 +276,17 @@ X(a, STATIC,   SINGULAR, STRING,   sw_version_string,   6)
 #define KeepAlive_DEFAULT NULL
 
 #define Telemetry_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, UINT32,   cp_voltage_hi,     1) \
-X(a, STATIC,   SINGULAR, UINT32,   cp_voltage_lo,     2)
+X(a, STATIC,   SINGULAR, FLOAT,    cp_voltage_hi,     1) \
+X(a, STATIC,   SINGULAR, FLOAT,    cp_voltage_lo,     2) \
+X(a, STATIC,   SINGULAR, FLOAT,    temp0,             3) \
+X(a, STATIC,   SINGULAR, FLOAT,    temp1,             4)
 #define Telemetry_CALLBACK NULL
 #define Telemetry_DEFAULT NULL
+
+#define FirmwareUpdate_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, BOOL,     invoke_rom_bootloader,   1)
+#define FirmwareUpdate_CALLBACK NULL
+#define FirmwareUpdate_DEFAULT NULL
 
 extern const pb_msgdesc_t EverestToMcu_msg;
 extern const pb_msgdesc_t McuToEverest_msg;
@@ -269,6 +294,7 @@ extern const pb_msgdesc_t ErrorFlags_msg;
 extern const pb_msgdesc_t KeepAliveLo_msg;
 extern const pb_msgdesc_t KeepAlive_msg;
 extern const pb_msgdesc_t Telemetry_msg;
+extern const pb_msgdesc_t FirmwareUpdate_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define EverestToMcu_fields &EverestToMcu_msg
@@ -277,15 +303,17 @@ extern const pb_msgdesc_t Telemetry_msg;
 #define KeepAliveLo_fields &KeepAliveLo_msg
 #define KeepAlive_fields &KeepAlive_msg
 #define Telemetry_fields &Telemetry_msg
+#define FirmwareUpdate_fields &FirmwareUpdate_msg
 
 /* Maximum encoded size of messages (where known) */
 #define ErrorFlags_size                          14
-#define EverestToMcu_size                        73
+#define EverestToMcu_size                        72
+#define FirmwareUpdate_size                      2
 #define KeepAliveLo_size                         106
 #define KeepAlive_size                           70
 #define McuToEverest_size                        108
 #define TIDA010939_PB_H_MAX_SIZE                 McuToEverest_size
-#define Telemetry_size                           12
+#define Telemetry_size                           20
 
 #ifdef __cplusplus
 } /* extern "C" */
