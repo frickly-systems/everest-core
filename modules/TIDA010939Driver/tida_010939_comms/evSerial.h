@@ -31,6 +31,7 @@ public:
 
     void setPWM(uint32_t dc);
     void allowPowerOn(bool p);
+    void lock();
     void forceUnlock();
     void set_number_of_phases(bool p);
 

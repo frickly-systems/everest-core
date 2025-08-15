@@ -153,14 +153,16 @@ void evSerial::handlePacket(uint8_t* buf, int len) {
 
     if (pb_decode(&istream, McuToEverest_fields, &msg_in)) {
 
-        printf("Decoded message with type %d\n", msg_in.which_payload);
+        //printf("Decoded message with type %d\n", msg_in.which_payload);
 
         switch (msg_in.which_payload) {
 
         case McuToEverest_telemetry_tag:
-            printf("Received telemetry\n");
-            printf("cp_voltage_hi: %u\n", msg_in.payload.telemetry.cp_voltage_hi);
-            printf("cp_voltage_lo: %u\n", msg_in.payload.telemetry.cp_voltage_lo);
+            //printf("Received telemetry\n");
+            //printf("cp_voltage_hi: %f\n", msg_in.payload.telemetry.cp_voltage_hi);
+            //printf("cp_voltage_lo: %f\n", msg_in.payload.telemetry.cp_voltage_lo);
+            //printf("temp0: %f\n", msg_in.payload.telemetry.temp0);
+            //printf("temp1: %f\n", msg_in.payload.telemetry.temp1);
             break;
 
         case McuToEverest_keep_alive_tag:
@@ -344,6 +346,13 @@ void evSerial::allowPowerOn(bool p) {
     EverestToMcu msg_out = EverestToMcu_init_default;
     msg_out.which_payload = EverestToMcu_allow_power_on_tag;
     msg_out.payload.allow_power_on = p;
+    linkWrite(&msg_out);
+}
+
+void evSerial::lock() {
+    EverestToMcu msg_out = EverestToMcu_init_default;
+    msg_out.which_payload = EverestToMcu_connector_lock_tag;
+    msg_out.payload.connector_lock = true;
     linkWrite(&msg_out);
 }
 
