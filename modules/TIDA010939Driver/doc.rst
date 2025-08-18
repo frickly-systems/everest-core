@@ -14,8 +14,7 @@ Communication between the TIDA010939 microcontroller and this driver module
 
 The hardware connection between TIDA010939 and the host system (the board running EVerest and
 this module) is 3.3V TTL UART plus 2 GPIOs (one to reset the microcontroller
-from Linux and one to wakeup Linux from the microcontroller, which is 
-currrently unused).
+from Linux and one to boot into the bootloader).
 
 The default configuration is 115200 bps 8N1.
 
@@ -62,106 +61,4 @@ To generate the C code nanopb is used:
 
 The output should also be manually copied to TIDA010939 Firmware to ensure the same
 definition is used on both sides when making changes.
-
-EVerest to TIDA010939
---------------------
-
-The most important commands that EVerest sends to TIDA010939 are the following:
-
-``SetControlMode(mode)``: TIDA010939 firmware can operate in different modes:
-
-``Mode NONE = 0``: In this mode Yeti does not allow control over UART. It will
-still send telemetry data. Yeti operates as a standalone non-smart AC charger
-and EVerest does not need to be running.
-
-``HIGH = 1``: In this mode high level control is possible.
-Yeti operates as a standalone AC charger and EVerest does not need to be 
-running, but it does allow certain control such as setMaxCurrent from EVerest.
-This mode is not documented here as it is not used by EVerest anymore.
-
-``LOW = 2``: In this mode Yeti allows low level control. Yeti does not act
-as a standalone charger, it needs to be controlled by EVerest. It does however
-still run the very basic state machine to follow the car's states A-F and
-switches relais on and off accordingly. This ensures that basic electrical
-safety remains within the microcontroller and not within EVerest. 
-It generates more human readable events from state A-F transitions.
-
-PWM is directly controlled from EVerest in this mode.
-
-Low control mode:
-_________________
-
-The following commands describe the Low level control mode only:
-
-``AllowPowerOn(bool)``: Inform yeti that it is allowed to switch on the power 
-relais/contactors to the car on (true) or must switch off now (false). The 
-final decision remains with Yeti in case of power on, it should only power on
-after all other requirements are met (such as RCD current is below limit,
-car is in CP state B etc). On power off Yeti must switch off immediately.
-
-``SetPWM(mode, duty_cycle)``: mode 0: OFF (+12V), 1: ON (PWM with duty_cycle),
- 2: F (-12V). Yeti sets the PWM immediately.
-
-
-Other commands for all modes:
-_____________________________
-
-``KeepAliveHi``: Send this packet to TIDA010939 at 1Hz. If no heartbeat is received
-for a longer amount of time TIDA010939 may fall back to control mode NONE to act
-as a stand alone emergency backup charger or go into failure mode (can be 
-modified in the firmware).
-
-``SetThreePhases``: true: switches to 3ph on next switch on, else single phase.
-Only works on hardware configurations with dual relais. Does not switch while
-charging session is running, TIDA010939 firmware will delay the change to the next
-charging session.
-
-``EnableRCD``: enable or disable the onboard RCD. Some cars generate quite high
-residual current spikes and may not charge properly if RCD is enabled.
-
-``Enable``: Enable CP output
-
-``Disable``: Disable CP output (goes to floating/high impedance)
-
-``Reset``: Reset yeti firmware
-
-``Replug``: Initiate special virtual replug sequence without starting a new
-charging session.
-
-``SwitchThreePhasesWhileCharging``: Change between 1 and 3 phases while
-charging. This is currently not implemented in yeti firmware and will need
-special precautions because some cars may be destroyed by switching from one
-phase to three phase while charging is running (E.g. Zoe 1)
-
-``ForceUnlock``: Force unlock motor lock now regardless of state.
-
-Yeti to EVerest
----------------
-
-The following messages are relevant for LOW control mode:
-
-``Event``: This is the most important message from Yeti. It will send an event
-on CP transitions:
-
-* ``CAR_PLUGGED_IN``: CP State A -> B
-* ``CAR_REQUESTED_POWER``: CP State B->C or B->D
-* ``POWER_ON``: Relais switched on succesfully (i.e. after mirror contact check)
-* ``POWER_OFF``: Relais switched off succesfully
-* ``CAR_REQUESTED_STOP_POWER``: CP State C/D -> any other state
-* ``CAR_UNPLUGGED``: any other state -> A
-* ``ERROR_E``: any other state -> E
-* ``ERROR_DF``: Car diode failure detected
-* ``ERROR_RELAIS``: Relais error (mirror contact check failed)
-* ``ERROR_RCD``:: RCD over current event
-* ``ERROR_VENTILATION_NOT_AVAILABLE``: Car requested D but no ventilation available
-* ``ERROR_OVER_CURRENT``: TIDA010939 detected quick over current on AC lines
-* ``ENTER_BCD``: any other state -> B/C/D. Used to start SLAC
-* ``LEAVE_BCD``: B/C/D -> any other state. Stops SLAC.
-* ``PERMANENT_FAULT``: Permanent fault that cannot be cleared by unplugging car
-* ``EVSE_REPLUG_STARTED``: Replugging sequence started
-* ``EVSE_REPLUG_FINISHED``: Replugging sequence completed
-
-``KeepAliveLo``: TIDA010939 sends this at 1Hz to keep up connection.
-
-``ResetDone``: Sent once on boot of TIDA010939 firmware.
 

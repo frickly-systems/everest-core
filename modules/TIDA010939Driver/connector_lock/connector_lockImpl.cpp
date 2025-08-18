@@ -14,12 +14,10 @@ void connector_lockImpl::ready() {
 }
 
 void connector_lockImpl::handle_lock() {
-    printf("connector_lockImpl::handle_lock\n");
     mod->serial.lock();
 }
 
 void connector_lockImpl::handle_unlock() {
-    printf("connector_lockImpl::handle_unlock\n");
     mod->serial.forceUnlock();
 }
 
