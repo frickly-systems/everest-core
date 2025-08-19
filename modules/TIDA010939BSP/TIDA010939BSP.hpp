@@ -31,10 +31,10 @@ struct Conf {
     int caps_number_of_phases;
 };
 
-class TIDA010939Driver : public Everest::ModuleBase {
+class TIDA010939BSP : public Everest::ModuleBase {
 public:
-    TIDA010939Driver() = delete;
-    TIDA010939Driver(const ModuleInfo& info, Everest::TelemetryProvider& telemetry,
+    TIDA010939BSP() = delete;
+    TIDA010939BSP(const ModuleInfo& info, Everest::TelemetryProvider& telemetry,
                std::unique_ptr<evse_board_supportImplBase> p_board_support, std::unique_ptr<ac_rcdImplBase> p_rcd,
                std::unique_ptr<connector_lockImplBase> p_connector_lock, Conf& config) :
         ModuleBase(info),

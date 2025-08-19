@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2020 - 2021 Pionix GmbH and Contributors to EVerest
-#include "TIDA010939Driver.hpp"
+#include "TIDA010939BSP.hpp"
 #include <fmt/core.h>
 #include <utils/date.hpp>
 
 namespace module {
 
-void TIDA010939Driver::init() {
+void TIDA010939BSP::init() {
 
     // initialize serial driver
     if (!serial.openDevice(config.serial_port.c_str(), config.baud_rate)) {
@@ -63,7 +63,7 @@ void TIDA010939Driver::init() {
     invoke_init(*p_rcd);
 }
 
-void TIDA010939Driver::ready() {
+void TIDA010939BSP::ready() {
     serial.run();
 
     if (!serial.reset(config.reset_gpio_chip, config.reset_gpio)) {
@@ -99,7 +99,7 @@ void TIDA010939Driver::ready() {
     }
 }
 
-void TIDA010939Driver::publish_external_telemetry_livedata(const std::string& topic, const Everest::TelemetryMap& data) {
+void TIDA010939BSP::publish_external_telemetry_livedata(const std::string& topic, const Everest::TelemetryMap& data) {
     if (info.telemetry_enabled) {
         telemetry.publish("livedata", topic, data);
     }
@@ -110,7 +110,7 @@ bool rcd_selftest_failed;
 bool connector_lock_failed;
 bool cp_signal_fault;
 
-void TIDA010939Driver::clear_errors_on_unplug() {
+void TIDA010939BSP::clear_errors_on_unplug() {
     if (error_MREC2GroundFailure) {
         p_board_support->clear_error("evse_board_support/MREC2GroundFailure");
     }
@@ -122,7 +122,7 @@ void TIDA010939Driver::clear_errors_on_unplug() {
     error_MREC1ConnectorLockFailure = false;
 }
 
-void TIDA010939Driver::error_handling(ErrorFlags e) {
+void TIDA010939BSP::error_handling(ErrorFlags e) {
 
     if (e.diode_fault and not last_error_flags.diode_fault) {
         Everest::error::Error error_object = p_board_support->error_factory->create_error(

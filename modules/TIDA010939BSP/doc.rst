@@ -1,11 +1,11 @@
-.. _everest_modules_handwritten_TIDA010939Driver:
+.. _everest_modules_handwritten_TIDA010939BSP:
 
 ************************
-TIDA010939Driver
+TIDA010939BSP
 ************************
 
-See also module's :ref:`auto-generated reference <everest_modules_TIDA010939Driver>`.
-The module ``TIDA010939Driver`` is a board support driver for Texas Instruments
+See also module's :ref:`auto-generated reference <everest_modules_TIDA010939BSP>`.
+The module ``TIDA010939BSP`` is a board support driver for Texas Instruments
 TIDA-010939 reference design. It is based on the Yeti driver with similar structure
 and functionality.
 
