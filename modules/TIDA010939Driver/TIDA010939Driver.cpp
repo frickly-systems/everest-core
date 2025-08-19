@@ -132,13 +132,6 @@ void TIDA010939Driver::error_handling(ErrorFlags e) {
         p_board_support->clear_error("evse_board_support/DiodeFault");
     }
 
-    if (e.rcd_triggered and not last_error_flags.rcd_triggered) {
-        Everest::error::Error error_object = p_board_support->error_factory->create_error(
-            "evse_board_support/MREC2GroundFailure", "", "Onboard RCD triggered", Everest::error::Severity::High);
-        p_board_support->raise_error(error_object);
-        error_MREC2GroundFailure = true;
-    }
-
     if (e.ventilation_not_available and not last_error_flags.ventilation_not_available) {
         Everest::error::Error error_object =
             p_board_support->error_factory->create_error("evse_board_support/VentilationNotAvailable", "",

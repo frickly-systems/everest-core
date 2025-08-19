@@ -363,10 +363,19 @@ void evSerial::forceUnlock() {
     linkWrite(&msg_out);
 }
 
-void evSerial::set_number_of_phases(bool p) {
+void evSerial::set_rcd_test(bool test) {
     EverestToMcu msg_out = EverestToMcu_init_default;
-    msg_out.which_payload = EverestToMcu_set_number_of_phases_tag;
-    msg_out.payload.set_number_of_phases = p;
+    msg_out.which_payload = EverestToMcu_rcd_cmd_tag;
+    msg_out.payload.rcd_cmd.test = test;
+    msg_out.payload.rcd_cmd.reset = false; // reset is false for test command
+    linkWrite(&msg_out);
+}
+
+void evSerial::reset_rcd(bool reset) {
+    EverestToMcu msg_out = EverestToMcu_init_default;
+    msg_out.which_payload = EverestToMcu_rcd_cmd_tag;
+    msg_out.payload.rcd_cmd.test = false; // test is false for reset command
+    msg_out.payload.rcd_cmd.reset = reset;
     linkWrite(&msg_out);
 }
 

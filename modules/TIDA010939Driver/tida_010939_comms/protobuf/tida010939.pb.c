@@ -27,6 +27,9 @@ PB_BIND(Telemetry, Telemetry, AUTO)
 PB_BIND(FirmwareUpdate, FirmwareUpdate, AUTO)
 
 
+PB_BIND(RcdCommand, RcdCommand, AUTO)
+
+
 
 
 

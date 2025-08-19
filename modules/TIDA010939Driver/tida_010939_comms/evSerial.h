@@ -33,7 +33,8 @@ public:
     void allowPowerOn(bool p);
     void lock();
     void forceUnlock();
-    void set_number_of_phases(bool p);
+    void set_rcd_test(bool test);
+    void reset_rcd(bool reset);
 
     sigslot::signal<KeepAliveLo> signalKeepAliveLo;
     sigslot::signal<CpState> signalCPState;

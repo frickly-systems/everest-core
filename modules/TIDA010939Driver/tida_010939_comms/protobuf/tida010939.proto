@@ -5,9 +5,7 @@ syntax = "proto3";
  */
 message EverestToMcu {
  oneof payload {
-    // Needs to remain the same to allow firmware updates of older versions
     FirmwareUpdate firmware_update = 1;
-
 
     KeepAlive keep_alive = 2;
 
@@ -20,8 +18,7 @@ message EverestToMcu {
     bool allow_power_on = 5;
     bool reset = 6;
 
-     // false: 1 phase, true: 3 phases
-    bool set_number_of_phases = 7;
+    RcdCommand rcd_cmd = 8;
   }
 }
 
@@ -80,7 +77,6 @@ message KeepAliveLo {
   float hwcap_min_current = 8;
   uint32 hwcap_max_phase_count = 9;
   uint32 hwcap_min_phase_count = 10;
-  bool supports_changing_phases_during_charging = 11;
 }
 
 message KeepAlive {
@@ -114,4 +110,9 @@ enum LockState {
 
 message FirmwareUpdate {
   bool invoke_rom_bootloader = 1;
+}
+
+message RcdCommand {
+  bool test = 1;  // true -> set TEST pin high, false -> set TEST pin low
+  bool reset = 2; // reset RCD/emergency off if set to true
 }

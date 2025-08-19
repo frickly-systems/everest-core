@@ -99,12 +99,16 @@ typedef struct _FirmwareUpdate {
     bool invoke_rom_bootloader;
 } FirmwareUpdate;
 
+typedef struct _RcdCommand {
+    bool test; /* true -> set TEST pin high, false -> set TEST pin low */
+    bool reset; /* reset RCD/emergency off if set to true */
+} RcdCommand;
+
 /* *
  This container message is send from EVerest to MCU and may contain any allowed message in that direction. */
 typedef struct _EverestToMcu {
     pb_size_t which_payload;
     union {
-        /* Needs to remain the same to allow firmware updates of older versions */
         FirmwareUpdate firmware_update;
         KeepAlive keep_alive;
         /* false: unlock, true: lock */
@@ -113,8 +117,7 @@ typedef struct _EverestToMcu {
         uint32_t pwm_duty_cycle;
         bool allow_power_on;
         bool reset;
-        /* false: 1 phase, true: 3 phases */
-        bool set_number_of_phases;
+        RcdCommand rcd_cmd;
     } payload;
 } EverestToMcu;
 
@@ -152,6 +155,7 @@ extern "C" {
 
 
 
+
 /* Initializer values for message structs */
 #define EverestToMcu_init_default                {0, {FirmwareUpdate_init_default}}
 #define McuToEverest_init_default                {0, {KeepAliveLo_init_default}}
@@ -160,6 +164,7 @@ extern "C" {
 #define KeepAlive_init_default                   {0, 0, 0, ""}
 #define Telemetry_init_default                   {0, 0, 0, 0}
 #define FirmwareUpdate_init_default              {0}
+#define RcdCommand_init_default                  {0, 0}
 #define EverestToMcu_init_zero                   {0, {FirmwareUpdate_init_zero}}
 #define McuToEverest_init_zero                   {0, {KeepAliveLo_init_zero}}
 #define ErrorFlags_init_zero                     {0, 0, 0, 0, 0, 0, 0}
@@ -167,6 +172,7 @@ extern "C" {
 #define KeepAlive_init_zero                      {0, 0, 0, ""}
 #define Telemetry_init_zero                      {0, 0, 0, 0}
 #define FirmwareUpdate_init_zero                 {0}
+#define RcdCommand_init_zero                     {0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define ErrorFlags_diode_fault_tag               1
@@ -204,13 +210,15 @@ extern "C" {
 #define McuToEverest_pp_state_tag                7
 #define McuToEverest_lock_state_tag              8
 #define FirmwareUpdate_invoke_rom_bootloader_tag 1
+#define RcdCommand_test_tag                      1
+#define RcdCommand_reset_tag                     2
 #define EverestToMcu_firmware_update_tag         1
 #define EverestToMcu_keep_alive_tag              2
 #define EverestToMcu_connector_lock_tag          3
 #define EverestToMcu_pwm_duty_cycle_tag          4
 #define EverestToMcu_allow_power_on_tag          5
 #define EverestToMcu_reset_tag                   6
-#define EverestToMcu_set_number_of_phases_tag    7
+#define EverestToMcu_rcd_cmd_tag                 8
 
 /* Struct field encoding specification for nanopb */
 #define EverestToMcu_FIELDLIST(X, a) \
@@ -220,11 +228,12 @@ X(a, STATIC,   ONEOF,    BOOL,     (payload,connector_lock,payload.connector_loc
 X(a, STATIC,   ONEOF,    UINT32,   (payload,pwm_duty_cycle,payload.pwm_duty_cycle),   4) \
 X(a, STATIC,   ONEOF,    BOOL,     (payload,allow_power_on,payload.allow_power_on),   5) \
 X(a, STATIC,   ONEOF,    BOOL,     (payload,reset,payload.reset),   6) \
-X(a, STATIC,   ONEOF,    BOOL,     (payload,set_number_of_phases,payload.set_number_of_phases),   7)
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,rcd_cmd,payload.rcd_cmd),   8)
 #define EverestToMcu_CALLBACK NULL
 #define EverestToMcu_DEFAULT NULL
 #define EverestToMcu_payload_firmware_update_MSGTYPE FirmwareUpdate
 #define EverestToMcu_payload_keep_alive_MSGTYPE KeepAlive
+#define EverestToMcu_payload_rcd_cmd_MSGTYPE RcdCommand
 
 #define McuToEverest_FIELDLIST(X, a) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,keep_alive,payload.keep_alive),   1) \
@@ -288,6 +297,12 @@ X(a, STATIC,   SINGULAR, BOOL,     invoke_rom_bootloader,   1)
 #define FirmwareUpdate_CALLBACK NULL
 #define FirmwareUpdate_DEFAULT NULL
 
+#define RcdCommand_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, BOOL,     test,              1) \
+X(a, STATIC,   SINGULAR, BOOL,     reset,             2)
+#define RcdCommand_CALLBACK NULL
+#define RcdCommand_DEFAULT NULL
+
 extern const pb_msgdesc_t EverestToMcu_msg;
 extern const pb_msgdesc_t McuToEverest_msg;
 extern const pb_msgdesc_t ErrorFlags_msg;
@@ -295,6 +310,7 @@ extern const pb_msgdesc_t KeepAliveLo_msg;
 extern const pb_msgdesc_t KeepAlive_msg;
 extern const pb_msgdesc_t Telemetry_msg;
 extern const pb_msgdesc_t FirmwareUpdate_msg;
+extern const pb_msgdesc_t RcdCommand_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define EverestToMcu_fields &EverestToMcu_msg
@@ -304,6 +320,7 @@ extern const pb_msgdesc_t FirmwareUpdate_msg;
 #define KeepAlive_fields &KeepAlive_msg
 #define Telemetry_fields &Telemetry_msg
 #define FirmwareUpdate_fields &FirmwareUpdate_msg
+#define RcdCommand_fields &RcdCommand_msg
 
 /* Maximum encoded size of messages (where known) */
 #define ErrorFlags_size                          14
@@ -312,6 +329,7 @@ extern const pb_msgdesc_t FirmwareUpdate_msg;
 #define KeepAliveLo_size                         106
 #define KeepAlive_size                           70
 #define McuToEverest_size                        108
+#define RcdCommand_size                          4
 #define TIDA010939_PB_H_MAX_SIZE                 McuToEverest_size
 #define Telemetry_size                           20
 

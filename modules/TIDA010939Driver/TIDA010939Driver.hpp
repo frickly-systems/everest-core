@@ -28,6 +28,7 @@ struct Conf {
     int reset_gpio;
     int caps_min_current_A;
     int caps_max_current_A;
+    int caps_number_of_phases;
 };
 
 class TIDA010939Driver : public Everest::ModuleBase {
