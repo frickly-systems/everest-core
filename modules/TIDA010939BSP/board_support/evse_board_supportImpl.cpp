@@ -70,19 +70,22 @@ void evse_board_supportImpl::init() {
     {
         std::lock_guard<std::mutex> lock(capsMutex);
 
-        // caps are later updated
-
-        caps.min_current_A_import = 6;
-        caps.max_current_A_import = 6;
-        caps.min_phase_count_import = 1;
-        caps.max_phase_count_import = 1;
+        caps.min_current_A_import = mod->config.min_current_A_import;
+        caps.max_current_A_import = mod->config.max_current_A_import;
+        caps.min_phase_count_import = mod->config.min_phase_count_import;
+        caps.max_phase_count_import = mod->config.max_phase_count_import;
         caps.supports_changing_phases_during_charging = false;
-        caps.connector_type = types::evse_board_support::Connector_type::IEC62196Type2Socket;
 
-        caps.min_current_A_export = 6;
-        caps.max_current_A_export = 6;
-        caps.min_phase_count_export = 1;
-        caps.max_phase_count_export = 1;
+        caps.min_current_A_export = mod->config.min_current_A_export;
+        caps.max_current_A_export = mod->config.max_current_A_export;
+        caps.min_phase_count_export = mod->config.min_phase_count_export;
+        caps.max_phase_count_export = mod->config.max_phase_count_export;
+
+        if (mod->config.has_socket) {
+            caps.connector_type = types::evse_board_support::Connector_type::IEC62196Type2Socket;
+        } else {
+            caps.connector_type = types::evse_board_support::Connector_type::IEC62196Type2Cable;
+        }
     }
 
     mod->serial.signalCPState.connect([this](CpState cp_state) {
@@ -114,23 +117,6 @@ void evse_board_supportImpl::init() {
     });
 
     mod->serial.signalKeepAliveLo.connect([this](KeepAliveLo l) {
-        std::lock_guard<std::mutex> lock(capsMutex);
-
-        caps.min_current_A_import =
-            (mod->config.caps_min_current_A >= 0 ? mod->config.caps_min_current_A : l.hwcap_min_current);
-        caps.max_current_A_import =
-            (mod->config.caps_max_current_A >= 0 ? mod->config.caps_max_current_A : l.hwcap_max_current);
-        caps.min_phase_count_import = mod->config.caps_number_of_phases >= 0 ? mod->config.caps_number_of_phases : l.hwcap_min_phase_count;
-        caps.max_phase_count_import = mod->config.caps_number_of_phases >= 0 ? mod->config.caps_number_of_phases : l.hwcap_max_phase_count;
-
-        caps.min_current_A_export =
-            (mod->config.caps_min_current_A >= 0 ? mod->config.caps_min_current_A : l.hwcap_min_current);
-        caps.max_current_A_export =
-            (mod->config.caps_max_current_A >= 0 ? mod->config.caps_max_current_A : l.hwcap_max_current);
-        caps.min_phase_count_export = mod->config.caps_number_of_phases >= 0 ? mod->config.caps_number_of_phases : l.hwcap_min_phase_count;
-        caps.max_phase_count_export = mod->config.caps_number_of_phases >= 0 ? mod->config.caps_number_of_phases : l.hwcap_max_phase_count;
-
-        caps.supports_changing_phases_during_charging = false;
         if (not caps_received) {
             EVLOG_info << "TIDA-010939 Controller Configuration:";
             EVLOG_info << "  Hardware revision: " << l.hw_revision;

@@ -19,18 +19,56 @@ config:
     description: GPIO line to use to reset TIDA010939
     type: integer
     default: 27
-  caps_min_current_A:
-    description: Minimal current on AC side. For AC this is typically 6, but for HLC this can be less. -1 means use limit reported by HW.
+  max_current_A_import:
+    description: Maximum import current in amps
     type: integer
-    default: -1
-  caps_max_current_A:
-    description: Maximum current on AC side. For AC this is typically 16 or 32, but for HLC this can be less. -1 means use limit reported by HW.
+    minimum: 0
+    default: 16
+  min_current_A_import:
+    description: Minimum import current in amps
     type: integer
-    default: -1
-  caps_number_of_phases:
-    description: Number of phases for the AC connection. Typically 1 or 3.
+    minimum: 0
+    default: 6
+  min_phase_count_import:
+    description: Minimum phase count for import
     type: integer
-    default: 1
+    minimum: 1
+    maximum: 3
+    default: 3
+  max_phase_count_import:
+    description: Maximum phase count for import
+    type: integer
+    minimum: 1
+    maximum: 3
+    default: 3
+  min_current_A_export:
+    description: Minimum export current in amps
+    type: integer
+    minimum: 0
+    maximum: 63
+    default: 0
+  max_current_A_export:
+    description: Maximum export current in amps
+    type: integer
+    minimum: 0
+    maximum: 63
+    default: 0
+  min_phase_count_export:
+    description: Minimum phase count for export
+    type: integer
+    minimum: 1
+    maximum: 3
+    default: 3
+  max_phase_count_export:
+    description: Maximum phase count for export
+    type: integer
+    minimum: 1
+    maximum: 3
+    default: 3
+  has_socket:
+    description: Set to true if it has a socket, false if it has a permanently attached cable
+    type: boolean
+    default: false
 provides:
   board_support:
     interface: evse_board_support

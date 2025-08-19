@@ -26,9 +26,15 @@ struct Conf {
     int baud_rate;
     std::string reset_gpio_chip;
     int reset_gpio;
-    int caps_min_current_A;
-    int caps_max_current_A;
-    int caps_number_of_phases;
+    int min_current_A_import;
+    int max_current_A_import;
+    int min_phase_count_import;
+    int max_phase_count_import;
+    int min_current_A_export;
+    int max_current_A_export;
+    int min_phase_count_export;
+    int max_phase_count_export;
+    bool has_socket;
 };
 
 class TIDA010939BSP : public Everest::ModuleBase {
